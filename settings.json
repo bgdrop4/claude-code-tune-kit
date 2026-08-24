@@ -7,7 +7,6 @@
   "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "autoCompactWindow": 0.8,
   "cleanupPeriodDays": 30,
   "attribution": {
     "commit": false,
@@ -58,6 +57,17 @@
             "command": "~/.claude/hooks/formatter.sh",
             "timeout": 30,
             "async": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/aviso.sh",
+            "timeout": 5
           }
         ]
       }

@@ -84,7 +84,16 @@ if [ "$(get '.agentPushNotifEnabled')" = "true" ] || [ "$(get '.inputNeededNotif
 else casi "sin notificaciones" "La sesión se queda esperándote parado en vez de buscarte."; fi
 
 acw=$(get '.autoCompactWindow')
-[ -n "$acw" ] && si "autoCompactWindow: $acw" || printf "  ${D}·${R} ${D}autoCompactWindow sin definir (usa el default)${R}\n"
+if [ -n "$acw" ]; then
+  # acepta 100K a 1M TOKENS. Un 0.8 o un 80 ahí no es "80%": es basura.
+  if printf '%s' "$acw" | grep -qE '^[0-9]+$' && [ "$acw" -ge 100000 ] && [ "$acw" -le 1000000 ]; then
+    si "autoCompactWindow: $acw tokens"
+  else
+    no "autoCompactWindow: $acw — fuera de rango" "Son TOKENS, de 100000 a 1000000. Un 0.8 no es 80%. Bórralo o usa /autocompact 150k."
+  fi
+else
+  printf "  ${D}·${R} ${D}autoCompactWindow sin definir — el default del modelo está bien${R}\n"
+fi
 
 ef=$(get '.effortLevel')
 [ -n "$ef" ] && si "effortLevel: $ef" || printf "  ${D}·${R} ${D}effortLevel sin fijar — cada sesión arranca en el default${R}\n"
@@ -109,6 +118,13 @@ else
     c=$(jq --arg e "$ev" '[.hooks[$e][]?.hooks[]?] | length' "$S" 2>/dev/null || echo 0)
     [ "${c:-0}" -gt 0 ] && printf "     ${D}%s × %s${R}\n" "$ev" "$c"
   done
+
+  # El avisito necesita su par de eventos. Con Stop a solas, habla en CADA turno.
+  n_stop=$(jq '[.hooks.Stop[]?.hooks[]? | select(.command | test("aviso"))] | length' "$S" 2>/dev/null || echo 0)
+  n_ups=$(jq  '[.hooks.UserPromptSubmit[]?.hooks[]? | select(.command | test("aviso"))] | length' "$S" 2>/dev/null || echo 0)
+  if [ "${n_stop:-0}" -gt 0 ] && [ "${n_ups:-0}" -eq 0 ]; then
+    casi "el avisito solo tiene el hook Stop" "Sin el de UserPromptSubmit no puede medir cuánto tardó el turno y te va a hablar en cada respuesta."
+  fi
 fi
 
 deny=$(jq -r '[.permissions.deny[]?] | join(" ")' "$S" 2>/dev/null)

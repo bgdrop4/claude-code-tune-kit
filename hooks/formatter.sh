@@ -11,7 +11,9 @@ set -uo pipefail
 
 input=$(cat)
 path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')
-[ -z "$path" ] || [ ! -f "$path" ] && exit 0
+# `A || B && C` en bash es `(A || B) && C` — funcionaba por accidente.
+# Explícito, para que nadie lo copie mal a otro hook.
+if [ -z "$path" ] || [ ! -f "$path" ]; then exit 0; fi
 
 tiene() { command -v "$1" >/dev/null 2>&1; }
 
