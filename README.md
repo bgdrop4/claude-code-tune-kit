@@ -10,7 +10,7 @@ Ocho piezas, todas pegables en menos de diez minutos. Del taller de
 ## Instalación en 3 comandos
 
 ```bash
-git clone <este-repo> tune-kit && cd tune-kit
+git clone https://github.com/Carlos-Dominguez-faber/claude-code-tune-kit.git tune-kit && cd tune-kit
 bash instalar.sh          # respalda lo tuyo antes de tocar nada
 bash cc-doctor.sh         # te dice cómo quedaste
 ```
