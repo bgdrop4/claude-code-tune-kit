@@ -201,7 +201,7 @@ El kit corre en Windows nativo, sin WSL. Claude Code ya usa **Git Bash** por def
 (cae a PowerShell solo si Git Bash no está instalado), así que los hooks en `.sh` son el
 camino natural — no hay que traducir nada a PowerShell.
 
-Pero hay **dos trampas que matan el kit en Windows y son invisibles desde una Mac**. Las dos
+Pero hay **tres trampas que matan el kit en Windows y son invisibles desde una Mac**. Las tres
 ya están resueltas aquí; se documentan porque te van a morder en cualquier otro repo de hooks:
 
 **1 · CRLF mata los cuatro hooks.** Git for Windows trae `core.autocrlf=true` de fábrica: al
@@ -221,11 +221,11 @@ del kit llevan `bash` adelante:
 "command": "~/.claude/hooks/freno-de-mano.sh"        // ✕ abre el selector de aplicación
 ```
 
-Y un tercero que es de seguridad: en Windows las rutas llegan con backslash
+**3 · El blindaje se evadía con solo estar en Windows.** En Windows las rutas llegan con backslash
 (`C:\Users\ana\.ssh\id_rsa`), y `basename` solo parte por `/`. Sin normalizar, los patrones de
 coincidencia exacta del blindaje nunca casaban: **`id_rsa`, `credentials` y `.npmrc` quedaban
-desprotegidos con solo estar en Windows**. Los hooks normalizan la ruta antes de comparar, y la
-suite trae 24 casos de Windows que lo fijan.
+desprotegidos** — 3 de 4 rutas se colaban, medido. Los hooks normalizan la ruta antes de
+comparar, y la suite trae 24 casos de Windows que lo fijan.
 
 `cc-doctor.sh` revisa los tres cuando corre en Windows, más a cuál `bash` estás resolviendo —
 desde `2.1.81` el instalador nativo llegó a resolver al bash de WSL, que no ve tus rutas de
@@ -247,11 +247,14 @@ rm -f ~/.claude/hooks/{freno-de-mano,blindaje-env,formatter,aviso}.sh
 rm -f ~/.claude/statusline.sh ~/.claude/output-styles/sin-humo.md
 ```
 
-En PowerShell:
+En PowerShell — ojo, aquí `{a,b}` no se expande como en bash, es texto literal:
 
 ```powershell
-Remove-Item "$env:USERPROFILE\.claude\hooks\{freno-de-mano,blindaje-env,formatter,aviso}.sh"
-Remove-Item "$env:USERPROFILE\.claude\statusline.sh","$env:USERPROFILE\.claude\output-styles\sin-humo.md"
+'freno-de-mano','blindaje-env','formatter','aviso' | ForEach-Object {
+  Remove-Item "$env:USERPROFILE\.claude\hooks\$($_).sh" -ErrorAction SilentlyContinue
+}
+Remove-Item "$env:USERPROFILE\.claude\statusline.sh",
+            "$env:USERPROFILE\.claude\output-styles\sin-humo.md" -ErrorAction SilentlyContinue
 ```
 
 Y restaura tu configuración anterior desde el respaldo que dejó el instalador:
