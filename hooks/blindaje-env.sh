@@ -15,7 +15,12 @@ input=$(cat)
 path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // .tool_input.notebook_path // ""')
 [ -z "$path" ] && exit 0
 
-base=$(basename "$path")
+# En Windows la ruta llega con backslash: C:\Users\x\.ssh\id_rsa
+# `basename` solo parte por «/», así que sin esto devuelve la cadena
+# ENTERA y los patrones de coincidencia exacta (id_rsa, credentials,
+# .npmrc) nunca casan: el blindaje se evade con solo estar en Windows.
+# Verificado: 3 de 4 rutas se colaban antes de esta línea.
+base=$(basename "${path//\\//}")
 
 case "$base" in
   .env|.env.*|*.env)                       motivo="es un archivo de variables de entorno" ;;

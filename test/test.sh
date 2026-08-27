@@ -13,7 +13,12 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 V=$'\033[38;5;71m'; X=$'\033[38;5;167m'; D=$'\033[2m'; B=$'\033[1m'; O=$'\033[38;5;173m'; R=$'\033[0m'
 ok=0; fail=0
 
-json() { python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$1" 2>/dev/null \
+# El instalador de python.org para Windows deja `python` y `py`, NO `python3`.
+# Buscamos los tres; si no hay ninguno, el sed de respaldo hace el trabajo.
+PY=""
+for c in python3 python py; do command -v "$c" >/dev/null 2>&1 && { PY="$c"; break; }; done
+
+json() { [ -n "$PY" ] && "$PY" -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$1" 2>/dev/null \
          || printf '"%s"' "$(printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g')"; }
 
 # $1 comando · $2 BLOQUEA|PASA · $3 hook
@@ -67,6 +72,31 @@ for f in '/p/.env' '/p/.env.local' '/p/.env.production' '/p/config/.env' \
   prueba "$f" BLOQUEA blindaje
 done
 for f in '/p/.env.example' '/p/.env.template' '/p/src/app.ts' '/p/README.md' '/p/package.json'; do
+  prueba "$f" PASA blindaje
+done
+
+titulo "Windows · rutas que antes se colaban"
+# Git Bash monta las unidades en /c, /d… y Claude Code también pasa rutas
+# nativas con backslash. Sin normalizar, `basename` no partía nada y los
+# patrones de coincidencia exacta (id_rsa, credentials, .npmrc) fallaban:
+# 3 de 4 secretos quedaban desprotegidos con solo estar en Windows.
+for c in 'rm -rf /c/Windows' 'rm -rf /c/Windows/System32' 'rm -rf C:\Windows' \
+         'rm -rf /c/Program Files' 'rm -rf "C:\Program Files (x86)"' \
+         'rm -rf /c/ProgramData' 'rm -rf C:\Users' 'rm -rf /c/Users' \
+         'rm -rf /c' 'rm -rf C:\' 'rm -rf %USERPROFILE%' \
+         'cd /tmp && rm -rf /c/Windows'; do
+  prueba "$c" BLOQUEA freno
+done
+# …y el trabajo normal en Windows sigue pasando.
+for c in 'rm -rf /c/proyectos/miapp/dist' 'rm -rf /d/repos/app/node_modules' \
+         'rm -rf C:\proyectos\miapp\build'; do
+  prueba "$c" PASA freno
+done
+for f in 'C:\Users\ana\.ssh\id_rsa' 'C:\proyectos\credentials' 'C:\Users\ana\.npmrc' \
+         'C:\proyectos\.env' 'C:\p\cert.pem' 'C:\p\service-account.json'; do
+  prueba "$f" BLOQUEA blindaje
+done
+for f in 'C:\proyectos\.env.example' 'C:\proyectos\src\app.ts' 'C:\p\README.md'; do
   prueba "$f" PASA blindaje
 done
 

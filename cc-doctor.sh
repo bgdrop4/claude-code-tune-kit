@@ -11,6 +11,13 @@ MIN_VERSION="2.1.237"        # mínima para el estilo Concise
 CFG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 S="$CFG/settings.json"
 
+# Git Bash / MSYS / Cygwin se reportan como MINGW*, MSYS* o CYGWIN*
+case "$(uname -s 2>/dev/null)" in
+  MINGW*|MSYS*|CYGWIN*) ES_WINDOWS=1; SO="Windows (Git Bash)"; JQ_INSTALL="winget install jqlang.jq" ;;
+  Darwin)               ES_WINDOWS=0; SO="macOS";              JQ_INSTALL="brew install jq" ;;
+  *)                    ES_WINDOWS=0; SO="Linux";              JQ_INSTALL="sudo apt install jq" ;;
+esac
+
 O=$'\033[38;5;173m'; V=$'\033[38;5;71m'; A=$'\033[38;5;179m'
 X=$'\033[38;5;167m'; D=$'\033[2m'; B=$'\033[1m'; R=$'\033[0m'
 
@@ -23,13 +30,13 @@ titulo(){ printf "\n${O}${B}%s${R}\n" "$1"; }
 get() { [ -f "$S" ] && jq -r "$1 // empty" "$S" 2>/dev/null; }
 
 printf "\n${O}${B}  cc-doctor${R} ${D}· Tune Kit · Imperio Agéntico${R}\n"
-printf "${D}  %s${R}\n" "$CFG"
+printf "${D}  %s · %s${R}\n" "$CFG" "$SO"
 
 # ── 1 · lo básico ───────────────────────────────────────────
 titulo "1 · Lo básico"
 
 if command -v jq >/dev/null 2>&1; then si "jq instalado"
-else no "jq NO instalado" "Sin jq no corren ni los hooks ni la línea de estado: brew install jq"; fi
+else no "jq NO instalado" "Sin jq no corren ni los hooks ni la línea de estado: $JQ_INSTALL"; fi
 
 if command -v claude >/dev/null 2>&1; then
   ver=$(claude --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
@@ -160,6 +167,49 @@ if [ -d "$CFG/projects" ]; then
   peso=$(du -sh "$CFG/projects" 2>/dev/null | cut -f1)
   if [ -z "$cd_days" ]; then casi "transcripts: $peso, sin política de limpieza" 'Define "cleanupPeriodDays": 30.'
   else si "transcripts: $peso · se borran a los $cd_days días"; fi
+fi
+
+# ── 6 · Windows ─────────────────────────────────────────────
+# Las tres formas en que este kit muere en Windows y en ningún otro lado.
+if [ "$ES_WINDOWS" -eq 1 ]; then
+  titulo "6 · Windows"
+
+  # a) CRLF — el asesino silencioso. Con core.autocrlf=true el clone
+  #    convierte los .sh y bash sale a buscar «bash\r».
+  crlf=0
+  for f in "$CFG"/hooks/*.sh "$CFG/statusline.sh"; do
+    [ -f "$f" ] && grep -q $'\r' "$f" 2>/dev/null && crlf=$((crlf+1))
+  done
+  if [ "$crlf" -gt 0 ]; then
+    no "$crlf script(s) con finales de línea CRLF" \
+       "Bash busca un binario llamado «bash\\r» y NADA arranca. Corre: bash instalar.sh"
+  else
+    si "los scripts instalados están en LF"
+  fi
+
+  # b) el .sh pelón en settings.json — Windows lo abre con el selector de
+  #    aplicación en vez de ejecutarlo (claude-code#21847, #24097).
+  if [ -f "$S" ]; then
+    pelon=$(jq -r '[.. | objects | select(has("command")) | .command
+                    | select(type == "string")
+                    | select(test("\\.sh\\s*$")) | select(test("^\\s*bash\\s") | not)] | length' \
+                 "$S" 2>/dev/null || echo 0)
+    if [ "${pelon:-0}" -gt 0 ]; then
+      no "$pelon comando(s) apuntan a un .sh sin 'bash' adelante" \
+         "Windows abre el selector de aplicación en vez de ejecutarlo. Usa: \"bash ~/.claude/hooks/x.sh\""
+    else
+      si "los comandos .sh llevan 'bash' adelante"
+    fi
+  fi
+
+  # c) qué bash resuelve. Desde 2.1.81 el instalador nativo llegó a
+  #    resolver a bash de WSL, que no ve tus rutas de Windows (#37634).
+  cual_bash=$(command -v bash 2>/dev/null)
+  case "$cual_bash" in
+    /usr/bin/bash|/bin/bash|*Git*|*git*|*mingw*|*MINGW*) si "bash resuelve a Git Bash ${D}($cual_bash)${R}" ;;
+    "") no "no encuentro bash en el PATH" "Instala Git for Windows: winget install Git.Git" ;;
+    *)  casi "bash resuelve a $cual_bash" "Si es el de WSL, no ve tus rutas de Windows y los hooks fallan raro." ;;
+  esac
 fi
 
 # ── veredicto ───────────────────────────────────────────────

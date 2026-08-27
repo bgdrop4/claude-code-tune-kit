@@ -53,7 +53,9 @@ if [ -n "$CTX" ]; then
 fi
 
 if [ -n "$DIR" ]; then
-  out="${out} ${D}|${R} 📁 $(basename "$DIR")"
+  # En Windows la ruta llega con backslash; sin normalizar, `basename`
+  # no parte nada y la línea de estado imprime C:\Users\x\proyecto entero.
+  out="${out} ${D}|${R} 📁 $(basename "${DIR//\\//}")"
   branch=$(git -C "$DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)
   if [ -n "$branch" ]; then
     dirty=""

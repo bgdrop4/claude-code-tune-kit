@@ -9,8 +9,8 @@
 <p align="center">
   <img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-1f6feb?style=flat-square">
   <img alt="Claude Code 2.1.237+" src="https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.237-ec8c44?style=flat-square">
-  <img alt="70 tests" src="https://img.shields.io/badge/tests-70%20passing-2ea043?style=flat-square">
-  <img alt="macOS · Linux · WSL" src="https://img.shields.io/badge/macOS%20%C2%B7%20Linux%20%C2%B7%20WSL-30363d?style=flat-square">
+  <img alt="94 tests" src="https://img.shields.io/badge/tests-94%20passing-2ea043?style=flat-square">
+  <img alt="macOS · Linux · Windows" src="https://img.shields.io/badge/macOS%20%C2%B7%20Linux%20%C2%B7%20Windows-30363d?style=flat-square">
   <img alt="Español" src="https://img.shields.io/badge/idioma-espa%C3%B1ol-30363d?style=flat-square">
 </p>
 
@@ -42,12 +42,29 @@ $ bash cc-doctor.sh
 
 ## Instalación
 
+**macOS y Linux**
+
 ```bash
 git clone https://github.com/Carlos-Dominguez-faber/claude-code-tune-kit.git tune-kit
 cd tune-kit
 bash instalar.sh      # respalda lo tuyo antes de tocar nada
 bash cc-doctor.sh     # y te dice cómo quedaste
 ```
+
+**Windows** — en PowerShell:
+
+```powershell
+git clone https://github.com/Carlos-Dominguez-faber/claude-code-tune-kit.git tune-kit
+cd tune-kit
+powershell -ExecutionPolicy Bypass -File .\instalar.ps1
+bash cc-doctor.sh     # el doctor corre en Git Bash
+```
+
+> [!NOTE]
+> En Windows necesitas **Git for Windows** (`winget install Git.Git`) y **jq**
+> (`winget install jqlang.jq`). Claude Code ya usa Git Bash por default en Windows,
+> así que lo más probable es que Git ya lo tengas. Los detalles, en
+> [Windows](#windows).
 
 El instalador **fusiona, no sobrescribe**. Respalda tu `settings.json` con fecha y hora, y en el
 merge tus valores previos siempre ganan: si ya tenías tu propio `outputStyle` o tu allowlist, se
@@ -84,7 +101,10 @@ Después copia a mano los bloques de `settings.json` que quieras dentro de tu
 | [`hooks/aviso.sh`](hooks/aviso.sh) | Te avisa cuando termina — pero solo si el turno fue largo. |
 | [`output-styles/sin-humo.md`](output-styles/sin-humo.md) | Sin halagos, comandos sin placeholders, el error exacto completo. |
 | [`ccglm.zsh`](ccglm.zsh) | Levanta Claude Code con GLM sin tocar tu configuración global. |
+| [`ccglm.ps1`](ccglm.ps1) | Lo mismo, para PowerShell. Restaura las variables aunque canceles con Ctrl-C. |
 | [`cc-doctor.sh`](cc-doctor.sh) | Audita tu instalación y te dice qué te falta. No cambia nada. |
+| [`instalar.ps1`](instalar.ps1) | Instalador de Windows. Fusiona sin jq y escribe los `.sh` en LF. |
+| [`.gitattributes`](.gitattributes) | Fuerza LF. Sin esto el kit no arranca en Windows — ver abajo. |
 
 ## La idea
 
@@ -175,13 +195,50 @@ escribes `claude` y es Claude, escribes `ccglm` y es GLM.
 > Y la variable es `ANTHROPIC_BASE_URL` — varios tutoriales dicen `ANTHROPIC_API_BASE`,
 > que Claude Code no lee.
 
+## Windows
+
+El kit corre en Windows nativo, sin WSL. Claude Code ya usa **Git Bash** por default ahí
+(cae a PowerShell solo si Git Bash no está instalado), así que los hooks en `.sh` son el
+camino natural — no hay que traducir nada a PowerShell.
+
+Pero hay **dos trampas que matan el kit en Windows y son invisibles desde una Mac**. Las dos
+ya están resueltas aquí; se documentan porque te van a morder en cualquier otro repo de hooks:
+
+**1 · CRLF mata los cuatro hooks.** Git for Windows trae `core.autocrlf=true` de fábrica: al
+clonar convierte los `.sh` a CRLF, el shebang queda `#!/usr/bin/env bash\r` y bash sale a
+buscar un binario llamado «bash\r». Todo muere con un error que no dice nada. Lo previene el
+[`.gitattributes`](.gitattributes) del repo, y `instalar.ps1` reescribe en LF por si ya lo
+tenías clonado de antes.
+
+**2 · Un `.sh` pelón en `settings.json` no se ejecuta.** Windows lo resuelve por asociación de
+archivo y abre el **selector de aplicación** o el editor
+([#21847](https://github.com/anthropics/claude-code/issues/21847),
+[#24097](https://github.com/anthropics/claude-code/issues/24097)). Por eso todos los comandos
+del kit llevan `bash` adelante:
+
+```jsonc
+"command": "bash ~/.claude/hooks/freno-de-mano.sh"   // ✓
+"command": "~/.claude/hooks/freno-de-mano.sh"        // ✕ abre el selector de aplicación
+```
+
+Y un tercero que es de seguridad: en Windows las rutas llegan con backslash
+(`C:\Users\ana\.ssh\id_rsa`), y `basename` solo parte por `/`. Sin normalizar, los patrones de
+coincidencia exacta del blindaje nunca casaban: **`id_rsa`, `credentials` y `.npmrc` quedaban
+desprotegidos con solo estar en Windows**. Los hooks normalizan la ruta antes de comparar, y la
+suite trae 24 casos de Windows que lo fijan.
+
+`cc-doctor.sh` revisa los tres cuando corre en Windows, más a cuál `bash` estás resolviendo —
+desde `2.1.81` el instalador nativo llegó a resolver al bash de WSL, que no ve tus rutas de
+Windows ([#37634](https://github.com/anthropics/claude-code/issues/37634)).
+
 ## Requisitos
 
 | | |
 | :--- | :--- |
 | **Claude Code** | `2.1.237` o superior — el estilo `Concise` no existe antes. `claude update` |
-| **jq** | Los hooks y la línea de estado lo necesitan. `brew install jq` |
-| **Sistema** | macOS, Linux o WSL. La voz del avisito usa `say` (macOS) o `notify-send` (Linux). |
+| **jq** | Los hooks y la línea de estado lo necesitan. `brew install jq` · `sudo apt install jq` · `winget install jqlang.jq` |
+| **Git Bash** | Solo Windows: `winget install Git.Git`. Claude Code ya lo usa por default ahí. |
+| **Sistema** | macOS, Linux o Windows. La voz del avisito usa `say` (macOS), `notify-send` (Linux) o SAPI vía PowerShell (Windows, sin instalar nada). |
 
 ## Desinstalar
 
@@ -190,10 +247,21 @@ rm -f ~/.claude/hooks/{freno-de-mano,blindaje-env,formatter,aviso}.sh
 rm -f ~/.claude/statusline.sh ~/.claude/output-styles/sin-humo.md
 ```
 
+En PowerShell:
+
+```powershell
+Remove-Item "$env:USERPROFILE\.claude\hooks\{freno-de-mano,blindaje-env,formatter,aviso}.sh"
+Remove-Item "$env:USERPROFILE\.claude\statusline.sh","$env:USERPROFILE\.claude\output-styles\sin-humo.md"
+```
+
 Y restaura tu configuración anterior desde el respaldo que dejó el instalador:
 
 ```bash
-ls ~/.claude/settings.json.antes-del-tune-kit.*
+ls ~/.claude/settings.json.antes-del-tune-kit.*          # macOS · Linux
+```
+
+```powershell
+Get-ChildItem "$env:USERPROFILE\.claude\settings.json.antes-del-tune-kit.*"
 ```
 
 ## Notas

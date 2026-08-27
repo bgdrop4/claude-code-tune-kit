@@ -1,0 +1,19 @@
+# ─────────────────────────────────────────────────────────────
+#  Finales de línea · Tune Kit
+#
+#  Sin esto, el kit NO funciona en Windows. Git for Windows trae
+#  core.autocrlf=true de fábrica: al clonar convierte LF → CRLF, el
+#  shebang queda "#!/usr/bin/env bash\r" y bash sale a buscar un
+#  binario llamado «bash\r» que no existe. Los cuatro hooks mueren
+#  con un error que no dice nada.
+#
+#  Esta línea gana sobre la config global del alumno. No la borres.
+# ─────────────────────────────────────────────────────────────
+*.sh   text eol=lf
+*.zsh  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+
+# PowerShell sí quiere CRLF: es lo que espera el ISE y lo que Windows
+# escribe de forma nativa.
+*.ps1  text eol=crlf

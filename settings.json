@@ -2,7 +2,7 @@
   "outputStyle": "Concise",
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline.sh"
+    "command": "bash ~/.claude/statusline.sh"
   },
   "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true,
@@ -31,7 +31,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/freno-de-mano.sh",
+            "command": "bash ~/.claude/hooks/freno-de-mano.sh",
             "timeout": 10,
             "statusMessage": "Revisando el comando…"
           }
@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/blindaje-env.sh",
+            "command": "bash ~/.claude/hooks/blindaje-env.sh",
             "timeout": 10
           }
         ]
@@ -54,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/formatter.sh",
+            "command": "bash ~/.claude/hooks/formatter.sh",
             "timeout": 30,
             "async": true
           }
@@ -66,7 +66,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/aviso.sh",
+            "command": "bash ~/.claude/hooks/aviso.sh",
             "timeout": 5
           }
         ]
@@ -77,7 +77,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/aviso.sh",
+            "command": "bash ~/.claude/hooks/aviso.sh",
             "timeout": 10,
             "async": true
           }

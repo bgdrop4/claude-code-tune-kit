@@ -74,11 +74,12 @@ revisa_rm() {
   local ruta
   for ruta in "${operandos[@]:-}"; do
     [ -z "$ruta" ] && continue
+    ruta="${ruta//\\//}"                   # C:\Windows → C:/Windows
     ruta="${ruta%/}"                       # /usr/ y /usr son lo mismo
     [ -z "$ruta" ] && ruta="/"             # "/" quedó vacío al quitar la barra
     case "$ruta" in
       /)          bloquea "borrado recursivo de la raíz del disco." ;;
-      '~'|'$HOME'|'${HOME}')
+      '~'|'$HOME'|'${HOME}'|'$USERPROFILE'|'%USERPROFILE%')
                   bloquea "borrado recursivo del home completo." ;;
       '*'|'.'|'..'|'./*'|'/*')
                   bloquea "borrado recursivo con comodín o sobre el directorio actual." \
@@ -87,6 +88,21 @@ revisa_rm() {
       /System|/System/*|/Library|/Library/*|/Applications|/Applications/*|/opt|/opt/*)
                   bloquea "borrado recursivo dentro de un directorio de sistema ($ruta)." ;;
       /Users|/home|/var|/private)
+                  bloquea "borrado recursivo de un árbol de sistema completo ($ruta)." ;;
+
+      # ── Windows ──────────────────────────────────────────────
+      # Git Bash monta las unidades como /c, /d… y Claude Code también
+      # llega a pasar rutas nativas (C:/Users). Sin estos casos, un
+      # `rm -rf /c/Windows` pasaba derecho: verificado antes de agregarlos.
+      # Ojo: las comillas ya se quitaron arriba, así que "Program Files"
+      # llega partido en dos tokens — por eso el patrón corta en Program*.
+      [A-Za-z]:|/[A-Za-z])
+                  bloquea "borrado recursivo de la raíz de una unidad ($ruta)." ;;
+      [A-Za-z]:/Windows|[A-Za-z]:/Windows/*|/[A-Za-z]/Windows|/[A-Za-z]/Windows/*|\
+      [A-Za-z]:/Program*|/[A-Za-z]/Program*|\
+      [A-Za-z]:/ProgramData|[A-Za-z]:/ProgramData/*|/[A-Za-z]/ProgramData|/[A-Za-z]/ProgramData/*)
+                  bloquea "borrado recursivo dentro de un directorio de sistema de Windows ($ruta)." ;;
+      [A-Za-z]:/Users|/[A-Za-z]/Users)
                   bloquea "borrado recursivo de un árbol de sistema completo ($ruta)." ;;
     esac
   done
