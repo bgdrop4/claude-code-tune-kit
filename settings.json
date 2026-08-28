@@ -9,7 +9,15 @@
   "agentPushNotifEnabled": true,
   "cleanupPeriodDays": 30,
   "permissions": {
-    "deny": [],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
+      "Read(./**/*.pem)",
+      "Read(./**/id_rsa)",
+      "Read(./**/credentials)"
+    ],
     "allow": []
   },
   "hooks": {

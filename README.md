@@ -88,7 +88,7 @@ blindada que se commitea no está protegida de nada.
 | `blindar.sh` | — | **Nuevo.** Configura el blindaje del proyecto y audita el `.gitignore` |
 | `ccglm.zsh` | La llave sale de `$ZAI_API_KEY` | Cae al **llavero de macOS**: la llave no vive en ningún archivo |
 | `settings.json` | Trae `attribution:{commit:false}` | **Fuera**: los commits conservan el `Co-Authored-By` |
-| `settings.json` | `permissions.deny` bloquea leer `.env` global | **Vacío**: la lectura la decide `blindaje.conf`, no dos sistemas peleando |
+| `settings.json` | Solo `permissions.deny` | `deny` cubre los `.env` de máquina; `blindaje.conf` decide el resto por proyecto |
 | `instalar.sh` | — | Flag `--sin-voz`: instala todo menos el avisito hablado |
 | `test/test-fork.sh` | — | **Nuevo.** 33 pruebas de lo de arriba, en archivo aparte para no chocar con `upstream` |
 
