@@ -88,6 +88,8 @@ blindada que se commitea no está protegida de nada.
 | `blindar.sh` | — | **Nuevo.** Configura el blindaje del proyecto y audita el `.gitignore` |
 | `ccglm.zsh` | La llave sale de `$ZAI_API_KEY` | Cae al **llavero de macOS**: la llave no vive en ningún archivo |
 | `settings.json` | Trae `attribution:{commit:false}` | **Fuera**: los commits conservan el `Co-Authored-By` |
+| `settings.json` | `permissions.deny` bloquea leer `.env` global | **Vacío**: la lectura la decide `blindaje.conf`, no dos sistemas peleando |
+| `instalar.sh` | — | Flag `--sin-voz`: instala todo menos el avisito hablado |
 | `test/test-fork.sh` | — | **Nuevo.** 33 pruebas de lo de arriba, en archivo aparte para no chocar con `upstream` |
 
 ```bash
@@ -116,6 +118,7 @@ git fetch upstream && git merge upstream/main
 git clone https://github.com/Carlos-Dominguez-faber/claude-code-tune-kit.git tune-kit
 cd tune-kit
 bash instalar.sh      # respalda lo tuyo antes de tocar nada
+#         --sin-voz   si no quieres que te hable al terminar
 bash cc-doctor.sh     # y te dice cómo quedaste
 ```
 
