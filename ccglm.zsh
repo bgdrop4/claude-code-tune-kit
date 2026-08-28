@@ -17,13 +17,27 @@
 
 export GLM_MODEL="${GLM_MODEL:-glm-5.3}"
 
+# Fork de Bryan: la llave se saca del llavero de macOS, no de un archivo.
+# Guardarla una sola vez:
+#   security add-generic-password -a "$USER" -s zai -w "TU_LLAVE_DE_ZAI"
+# Así nunca vive en ~/.zshrc, no se sube a git y no aparece en un `env`.
+_zai_key() {
+  [ -n "${ZAI_API_KEY:-}" ] && { printf '%s' "$ZAI_API_KEY"; return 0; }
+  security find-generic-password -s zai -w 2>/dev/null
+}
+
 ccglm() {
-  if [ -z "${ZAI_API_KEY:-}" ]; then
-    echo "✋ Falta ZAI_API_KEY. Expórtala antes de usar ccglm." >&2
+  local key
+  key="$(_zai_key)"
+  if [ -z "$key" ]; then
+    echo "✋ No encuentro la llave de z.ai." >&2
+    echo "   Guárdala en el llavero:" >&2
+    echo "     security add-generic-password -a \"$USER\" -s zai -w \"TU_LLAVE\"" >&2
+    echo "   O expórtala para esta sesión:  export ZAI_API_KEY=..." >&2
     return 1
   fi
   ANTHROPIC_BASE_URL="https://api.z.ai/api/anthropic" \
-  ANTHROPIC_AUTH_TOKEN="$ZAI_API_KEY" \
+  ANTHROPIC_AUTH_TOKEN="$key" \
   ANTHROPIC_DEFAULT_OPUS_MODEL="$GLM_MODEL" \
   ANTHROPIC_DEFAULT_SONNET_MODEL="$GLM_MODEL" \
   ANTHROPIC_DEFAULT_HAIKU_MODEL="$GLM_MODEL" \

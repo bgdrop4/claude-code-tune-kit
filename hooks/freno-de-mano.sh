@@ -108,6 +108,50 @@ revisa_rm() {
   done
 }
 
+# ── lectura de secretos por la puerta de atrás (fork de Bryan) ──
+# El blindaje corta Edit/Write/Read, pero un `cat llaves-api.md` es Bash
+# y se colaba entero. En modo=total eso deja el blindaje en decorado.
+# Solo aplica si el proyecto declaró modo=total en .claude/blindaje.conf.
+revisa_lectura_secretos() {
+  local sub="$1" proyecto conf modo extra
+  proyecto="${CLAUDE_PROJECT_DIR:-$PWD}"
+  conf="$proyecto/.claude/blindaje.conf"
+  [ -f "$conf" ] || return 0
+  modo=$(grep -E '^[[:space:]]*modo[[:space:]]*=' "$conf" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d '[:space:]')
+  [ "$modo" = "total" ] || return 0
+
+  local bin=""
+  for p in $sub; do
+    case "$p" in sudo|doas|env|nohup|time|command) continue ;; esac
+    bin="$p"; break
+  done
+  case "$bin" in
+    cat|bat|less|more|head|tail|grep|egrep|rg|ag|strings|xxd|od|nl|cp|scp|rsync|open|code|pbcopy) : ;;
+    *) return 0 ;;
+  esac
+
+  extra=$(grep -E '^[[:space:]]*proteger[[:space:]]*=' "$conf" 2>/dev/null | cut -d= -f2- | tr -d ' \t\r')
+  local tok base patron
+  for tok in $sub; do
+    case "$tok" in -*) continue ;; esac
+    base=$(basename "${tok//\\//}")
+    case "$base" in
+      .env|.env.*|*.env|id_rsa|id_ed25519|*.pem|*.key|*.p12|*.pfx|credentials|.netrc|.pgpass|.npmrc|.pypirc)
+        case "$base" in .env.example|.env.template|.env.sample) continue ;; esac
+        bloquea "este proyecto está en modo=total: no se leen secretos desde Bash ($base)." \
+                "Si necesitas un valor de ahí, pídeselo a Bryan." ;;
+    esac
+    [ -z "$extra" ] && continue
+    while IFS= read -r patron; do
+      [ -z "$patron" ] && continue
+      case "$base" in $patron)
+        bloquea "este proyecto está en modo=total: \"$base\" está blindado en $conf." \
+                "Si necesitas un valor de ahí, pídeselo a Bryan." ;;
+      esac
+    done <<< "$extra"
+  done
+}
+
 # ── cada sub-comando se juzga por separado ──
 # `cd /tmp && rm -rf /` no se escapa por venir encadenado.
 IFS=$'\n' read -rd '' -a SUBS <<< "$(
@@ -129,6 +173,7 @@ for sub in "${SUBS[@]:-}"; do
   done
 
   revisa_rm "$sub"
+  revisa_lectura_secretos "$sub"
 
   # Un redirect que aplasta un .env es peligroso venga del binario que venga
   # —incluso de `echo`—, así que se juzga ANTES de la excepción de lectura.

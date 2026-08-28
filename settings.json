@@ -8,10 +8,6 @@
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
   "cleanupPeriodDays": 30,
-  "attribution": {
-    "commit": false,
-    "pr": false
-  },
   "permissions": {
     "deny": [
       "Read(./.env)",
@@ -38,7 +34,7 @@
         ]
       },
       {
-        "matcher": "Edit|Write|NotebookEdit",
+        "matcher": "Edit|Write|NotebookEdit|Read",
         "hooks": [
           {
             "type": "command",
@@ -57,6 +53,11 @@
             "command": "bash ~/.claude/hooks/formatter.sh",
             "timeout": 30,
             "async": true
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/registro-llaves.sh",
+            "timeout": 10
           }
         ]
       }

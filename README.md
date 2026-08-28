@@ -1,5 +1,7 @@
 <h1 align="center">Tune Kit</h1>
 
+<p align="center"><em>Fork de Bryan Garzón · blindaje de secretos configurable por proyecto</em></p>
+
 <p align="center">
   <strong>Deja de usar Claude Code como venía en la caja.</strong><br>
   Semáforo de contexto, modo conciso, cuatro paredes que no se negocian<br>
@@ -9,7 +11,7 @@
 <p align="center">
   <img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-1f6feb?style=flat-square">
   <img alt="Claude Code 2.1.237+" src="https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.237-ec8c44?style=flat-square">
-  <img alt="94 tests" src="https://img.shields.io/badge/tests-94%20passing-2ea043?style=flat-square">
+  <img alt="129 tests" src="https://img.shields.io/badge/tests-129%20passing-2ea043?style=flat-square">
   <img alt="macOS · Linux · Windows" src="https://img.shields.io/badge/macOS%20%C2%B7%20Linux%20%C2%B7%20Windows-30363d?style=flat-square">
   <img alt="Español" src="https://img.shields.io/badge/idioma-espa%C3%B1ol-30363d?style=flat-square">
 </p>
@@ -39,6 +41,72 @@ $ bash cc-doctor.sh
   10 bien  3 por revisar  2 pendientes
   Empieza por las ✕ — ahí es donde estás dejando tiempo, dinero o seguridad en la mesa.
 ```
+
+## Qué añade este fork
+
+Fork de [Carlos-Dominguez-faber/claude-code-tune-kit](https://github.com/Carlos-Dominguez-faber/claude-code-tune-kit).
+El kit original protege una lista fija de nombres estándar (`.env`, `id_rsa`, `*.pem`) y siempre
+con el mismo nivel. Eso deja dos huecos que aquí se cierran:
+
+**1 · El blindaje se decide por proyecto, no una vez para todo.** No tiene el mismo riesgo un
+vault personal —donde quieres que Claude pueda leer una key para configurarte un agente— que el
+repo de un cliente, donde una key impresa en pantalla es un incidente. Ahora cada proyecto lo
+declara en `.claude/blindaje.conf`:
+
+```ini
+modo=escritura          # nadie sobrescribe; Claude sí puede leer
+# modo=total            # nadie sobrescribe NI lee: ni Read, ni un `cat` desde Bash
+proteger=llaves-api.md
+proteger=*-secretos.md
+```
+
+Sin `blindaje.conf` el comportamiento es idéntico al del kit original: **nunca menos protección
+que antes**. Se configura con:
+
+```bash
+bash blindar.sh                      # ver el estado de este proyecto
+bash blindar.sh total llaves-api.md  # modo + archivo, de una
+```
+
+**2 · Las llaves con nombre propio quedaban fuera.** Un archivo llamado `llaves-api.md` es, para
+el hook original, un `.md` cualquiera — se sobrescribe sin avisar, y como suele estar en el
+`.gitignore` no hay copia en ningún lado. El hook nuevo [`registro-llaves.sh`](hooks/registro-llaves.sh)
+detecta cuando aparece un archivo con credenciales (por nombre, o por contenido: `sk-`, `ghp_`,
+`API_KEY=…`) que no está registrado, y le manda a Claude la instrucción de **preguntarte cómo
+blindarlo** en vez de decidirlo solo. Un hook no puede abrir un diálogo; el agente sí.
+
+`blindar.sh` avisa además si un archivo protegido **no está en el `.gitignore`** — una llave
+blindada que se commitea no está protegida de nada.
+
+### Diferencias, una por una
+
+| | Original | Este fork |
+| :--- | :--- | :--- |
+| `hooks/blindaje-env.sh` | Lista fija, solo escritura | Modo por proyecto; en `total` corta también `Read` |
+| `hooks/freno-de-mano.sh` | No mira lecturas | En `modo=total` bloquea `cat`/`grep`/`cp` sobre secretos |
+| `hooks/registro-llaves.sh` | — | **Nuevo.** Detecta llaves sin blindar y hace que el agente pregunte |
+| `blindar.sh` | — | **Nuevo.** Configura el blindaje del proyecto y audita el `.gitignore` |
+| `ccglm.zsh` | La llave sale de `$ZAI_API_KEY` | Cae al **llavero de macOS**: la llave no vive en ningún archivo |
+| `settings.json` | Trae `attribution:{commit:false}` | **Fuera**: los commits conservan el `Co-Authored-By` |
+| `test/test-fork.sh` | — | **Nuevo.** 33 pruebas de lo de arriba, en archivo aparte para no chocar con `upstream` |
+
+```bash
+bash test/test.sh        # 96 · el kit original
+bash test/test-fork.sh   # 33 · lo que añade este fork
+```
+
+Un bug encontrado al escribir esas pruebas: `tr -d '[:space:]'` se comía también los saltos de
+línea, así que con **dos o más** `proteger=` los nombres se pegaban en una sola cadena y solo el
+primero quedaba protegido. Corregido a `tr -d ' \t\r'`.
+
+### Traer mejoras del repo original
+
+```bash
+git remote add upstream https://github.com/Carlos-Dominguez-faber/claude-code-tune-kit.git
+git fetch upstream && git merge upstream/main
+```
+
+---
 
 ## Instalación
 

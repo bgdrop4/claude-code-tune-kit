@@ -1,0 +1,23 @@
+# ─────────────────────────────────────────────────────────────
+#  blindaje.conf — va en  <raiz-del-proyecto>/.claude/blindaje.conf
+#  Decide, POR PROYECTO, hasta dónde llega el blindaje de secretos.
+# ─────────────────────────────────────────────────────────────
+
+# modo=escritura → nadie sobrescribe los archivos protegidos,
+#                  pero Claude SÍ puede leerlos para configurarte cosas.
+#                  Es el default. Úsalo en tu vault y en lo tuyo.
+#
+# modo=total     → además, NADIE los lee: ni Claude con Read,
+#                  ni un `cat` desde Bash. Úsalo en repos de cliente,
+#                  en demos y en cualquier sitio donde una key impresa
+#                  en pantalla sea un problema.
+modo=escritura
+
+# Archivos propios de ESTE proyecto que hay que blindar.
+# Los nombres estándar (.env, id_rsa, *.pem, credentials, .npmrc…)
+# ya están protegidos siempre, no hace falta listarlos.
+# Se admiten comodines de shell.
+#
+# proteger=llaves-api.md
+# proteger=notas-privadas.md
+# proteger=*-secretos.md
