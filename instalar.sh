@@ -29,8 +29,11 @@ fi
 cp "$here"/hooks/*.sh          "$CFG/hooks/"
 cp "$here"/statusline.sh       "$CFG/"
 cp "$here"/output-styles/*.md  "$CFG/output-styles/"
-chmod +x "$CFG"/hooks/*.sh "$CFG/statusline.sh" 2>/dev/null || true
-printf "  ${V}✓${R} hooks, línea de estado y estilo copiados\n"
+# cc-doctor y blindar se usan de vez en cuando, pero se necesitan SIEMPRE a
+# mano: sin esto hay que clonar el repo entero solo para correr dos scripts.
+cp "$here/cc-doctor.sh" "$here/blindar.sh" "$CFG/" 2>/dev/null || true
+chmod +x "$CFG"/hooks/*.sh "$CFG/statusline.sh" "$CFG/cc-doctor.sh" "$CFG/blindar.sh" 2>/dev/null || true
+printf "  ${V}✓${R} hooks, línea de estado, estilo y utilidades copiados\n"
 
 # En Windows, si el repo se clonó con core.autocrlf=true los .sh traen CRLF
 # y bash sale a buscar un binario llamado «bash\r». El .gitattributes lo
